@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Linq;
 using System.Threading;
+using StockNotification.Database.Interface;
 using StockNotification.WinService.CheckPoint;
 using StockNotification.WinService.Entity;
 using System;
@@ -19,14 +20,52 @@ namespace StockNotification.WinService
 
         protected override void OnStart(string[] args)
         {
-            ThreadPool.QueueUserWorkItem(delegate(object state)
+            //ThreadPool.QueueUserWorkItem(delegate(object state)
+            //    {
+            //        while (true)
+            //        {
+            //            StartProcessing();
+            //            Thread.Sleep(TimeSpan.FromMinutes(30));
+            //        }
+            //    });
+
+            if (StartMySQL())
+            {
+                StartProcessing();
+                StopMySQL();
+            }
+        }
+
+        public  static bool StartMySQL()
+        {
+            try
+            {
+                var control = new ServiceController("mysql");
+                control.Start();
+                Thread.Sleep(TimeSpan.FromSeconds(10));
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogManager.WriteLog(LogFileType.Error, "启动MySQL失败" + e);
+                return false;
+            }
+        }
+
+        public static void StopMySQL()
+        {
+            try
+            {
+                var control = new ServiceController("mysql");
+                if (control.CanStop)
                 {
-                    while (true)
-                    {
-                        StartProcessing();
-                        Thread.Sleep(TimeSpan.FromMinutes(30));
-                    }
-                });
+                    control.Stop();
+                }
+            }
+            catch (Exception e)
+            {
+                LogManager.WriteLog(LogFileType.Error, "停止MySQL失败" + e);
+            } 
         }
 
         public void StartProcessing()

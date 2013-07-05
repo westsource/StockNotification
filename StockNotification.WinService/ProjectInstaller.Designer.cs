@@ -40,8 +40,6 @@
             // serviceInstaller1
             // 
             this.serviceInstaller1.ServiceName = "StockNotification.Service";
-            this.serviceInstaller1.ServicesDependedOn = new string[] {
-        "mysql"};
             this.serviceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
             // 
             // ProjectInstaller

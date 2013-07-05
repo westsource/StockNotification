@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using StockNotification.Common;
+using StockNotification.Database.Interface;
 using StockNotification.WinService.Entity;
 
 namespace StockNotification.WinService.CheckPoint

@@ -55,10 +55,8 @@
     <Compile Include="CheckPoint\CompareWithMaBase.cs" />
     <Compile Include="CheckPoint\SupportByMaBase.cs" />
     <Compile Include="Common\MailSender.cs" />
-    <Compile Include="Entity\Stock.cs" />
     <Compile Include="Entity\StockLastPriceDate.cs" />
     <Compile Include="Entity\Session.cs" />
-    <Compile Include="Entity\User.cs" />
     <Compile Include="MainSvr.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -83,6 +81,10 @@
     <ProjectReference Include="..\StockNotification.Common\StockNotification.Common.csproj">
       <Project>{e6750685-c0d1-4d0b-9f9e-efa83714c3c0}</Project>
       <Name>StockNotification.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StockNotification.Database.Interface\StockNotification.Database.Interface.csproj">
+      <Project>{3c208d2f-84c9-4f84-82a5-b7bf53327ce8}</Project>
+      <Name>StockNotification.Database.Interface</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

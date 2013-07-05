@@ -2,14 +2,18 @@
 using System.Data;
 using System.Windows.Forms;
 using StockNotification.Common;
+using StockNotification.Database.Interface;
 using StockNotification.WinService.Entity;
 
 namespace StockNotification.Gui
 {
     public partial class frmMain : Form
     {
+        private readonly IStore store;
+
         public frmMain()
         {
+            store = ApplicationEntry.Instance.GetService<IStore>();
             InitializeComponent();
         }
 
@@ -22,7 +26,7 @@ namespace StockNotification.Gui
 
                 var userId = ProcessUserInfo();
                 UpdateUserStocks(userId);
-                ClearOverdueStock();
+                store.ClearOverdueStock();
 
                 MessageBox.Show("导入完成");
             }
@@ -32,21 +36,11 @@ namespace StockNotification.Gui
             }
         }
 
-        private void ClearOverdueStock()
-        {
-            int effectStock = DatabaseHelper.Instance.ExecuteSql(
-                "delete from stock where id not in "
-                + " ("
-                + " select distinct stockid from userstock"
-                + " )");
-
-            LogManager.WriteLog(LogFileType.Trace,
-                                string.Format("删除{0}条股票代码", effectStock));
-        }
-
         private void UpdateUserStocks(string userId)
         {
-            ClearStockOfUser(userId);
+            var effectStock = store.ClearStockOfUser(userId);
+            LogManager.WriteLog(LogFileType.Trace,
+                                string.Format("删除{0}条股票代码", effectStock));
 
             var symbols = tbStocks.Text.Split(new[] {",", "\r\n"},
                                               StringSplitOptions.RemoveEmptyEntries);
@@ -61,33 +55,10 @@ namespace StockNotification.Gui
             }
         }
 
-        private void ClearStockOfUser(string userId)
-        {
-            //清理userstock表中相关用户的数据
-            DatabaseHelper.Instance.ExecuteSql(
-                "delete from userstock where userid=?userid",
-                new object[] {userId});
-        }
-
         private void AppendUserStock(string userId, string symbol)
         {
             string stockId = GetStockId(symbol);
-            var count = int.Parse(DatabaseHelper.Instance.ExecuteScalar(
-                "select count(1) from userstock where userid=?userid and stockid=?stockid",
-                new object[]
-                    {
-                        userId, stockId
-                    }).ToString());
-            if (count != 0)
-                return;
-
-            DatabaseHelper.Instance.ExecuteSql(
-                "insert into userstock(id,userid,stockid)values(?id,?userid,?stockid)",
-                new object[]
-                    {
-                        Guid.NewGuid().ToString(),
-                        userId, stockId
-                    });
+            store.SaveStockForUser(userId, symbol);
         }
 
         /// <summary>
@@ -99,25 +70,8 @@ namespace StockNotification.Gui
         {
             //数据库中的所有股票代码都是大写
             symbol = symbol.Trim().ToUpper();
-
-            var count = int.Parse(DatabaseHelper.Instance.ExecuteScalar(
-                "select count(1) from stock where stock=?symbol",
-                new object[] {symbol}).ToString());
-
-            if (count == 0)
-            {
-                DatabaseHelper.Instance.ExecuteSql(
-                    "insert into stock(id,stock)values(?id,?stock)",
-                    new object[]
-                        {
-                            Guid.NewGuid().ToString(),
-                            symbol
-                        });
-            }
-
-            return DatabaseHelper.Instance.ExecuteScalar(
-                "select id from stock where stock=?symbol",
-                new object[] {symbol}).ToString();
+            var stock = store.GetStock(symbol);
+            return stock.Id;
         }
 
         /// <summary>
@@ -132,36 +86,8 @@ namespace StockNotification.Gui
                     Email = tbEmail.Text.Trim()
                 };
 
-            var count = int.Parse(DatabaseHelper.Instance.ExecuteScalar(
-                "select count(1) from user where username=?username",
-                new object[] {tbUserName.Text.Trim().ToLower()}).ToString());
-
-            //如无此用户则添加，否则更新
-            if (count == 0)
-            {
-                DatabaseHelper.Instance.ExecuteSql(
-                    "insert into user(userid,username,email)values(?userid,?username,?email)",
-                    new object[]
-                        {
-                            Guid.NewGuid().ToString(),
-                            user.Name,
-                            user.Email
-                        });
-            }
-            else
-            {
-                DatabaseHelper.Instance.ExecuteSql(
-                    "update user set email=?email where username=?username",
-                    new object[]
-                        {
-                            user.Email,
-                            user.Name
-                        });
-            }
-
-            return DatabaseHelper.Instance.ExecuteScalar(
-                "select userid from user where username=?username",
-                new object[] {tbUserName.Text.Trim().ToLower()}).ToString();
+            var u = store.SaveUser(user);
+            return u.Id;
         }
 
         private bool ValidateInput()
@@ -194,26 +120,28 @@ namespace StockNotification.Gui
         {
             try
             {
-                if (!string.IsNullOrEmpty(tbUserName.Text.Trim()) && string.IsNullOrEmpty(tbStocks.Text.Trim()))
+                var needRefresh = !string.IsNullOrEmpty(tbUserName.Text.Trim());
+                if (sender.GetType() != this.GetType())
+                {
+                    needRefresh = needRefresh && string.IsNullOrEmpty(tbStocks.Text.Trim());
+                }
+
+                if (needRefresh)
                 {
                     var userName = tbUserName.Text.Trim().ToLower();
-                    tbEmail.Text = DatabaseHelper.Instance.ExecuteScalar(
-                        "select email from user where username=?username",
-                        new object[] {userName}).ToString();
-
-                    var userId = DatabaseHelper.Instance.ExecuteScalar(
-                        "select userid from user where username=?username",
-                        new object[] {userName}).ToString();
-
-                    var rows = DatabaseHelper.Instance.GetDataTable(
-                        "select s.stock from stock s "
-                        + " join userstock us on s.id=us.stockid and us.userid=?userid"
-                        + " order by stock",
-                        new object[] {userId}
-                        ).Rows;
-                    foreach (DataRow r in rows)
+                    var user = store.GetUser(userName);
+                    if (null == user)
                     {
-                        tbStocks.Text += r[0] + "\r\n";
+                        return;
+                    }
+
+                    tbEmail.Text = user.Email;
+
+                    var stocks = store.GetStockOfUser(user.Id);
+                    tbStocks.Text = "";
+                    foreach (var s in stocks)
+                    {
+                        tbStocks.Text += s.Symbol + "\r\n";
                     }
                 }
             }
@@ -221,6 +149,11 @@ namespace StockNotification.Gui
             {
                 MessageBox.Show(exception.ToString());
             }
+        }
+
+        private void frmMain_Load(object sender, EventArgs e)
+        {
+            tbUserName_Leave(this, null);
         }
     }
 }
