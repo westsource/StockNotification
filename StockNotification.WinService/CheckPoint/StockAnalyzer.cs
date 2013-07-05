@@ -13,7 +13,7 @@ namespace StockNotification.WinService.CheckPoint
         private readonly Stock _stock;
         private readonly List<string> _messages; 
 
-        private string LastSessionDate
+        public static string LastSessionDate
         {
             get
             {

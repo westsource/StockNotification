@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Common", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Gui", "StockNotification.Gui\StockNotification.Gui.csproj", "{4845D0E0-D2CD-4D29-A8FE-0464CA357588}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestGui", "TestGui\TestGui.csproj", "{217BDA4C-EE93-4A8E-9580-38F235598A80}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Database.Interface", "StockNotification.Database.Interface\StockNotification.Database.Interface.csproj", "{3C208D2F-84C9-4F84-82A5-B7BF53327CE8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Database.SQLite", "StockNotification.Database.SQLite\StockNotification.Database.SQLite.csproj", "{37F25B06-7FC8-447A-A964-521D21193DB3}"
@@ -37,10 +35,6 @@ Global
 		{4845D0E0-D2CD-4D29-A8FE-0464CA357588}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4845D0E0-D2CD-4D29-A8FE-0464CA357588}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4845D0E0-D2CD-4D29-A8FE-0464CA357588}.Release|Any CPU.Build.0 = Release|Any CPU
-		{217BDA4C-EE93-4A8E-9580-38F235598A80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{217BDA4C-EE93-4A8E-9580-38F235598A80}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{217BDA4C-EE93-4A8E-9580-38F235598A80}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{217BDA4C-EE93-4A8E-9580-38F235598A80}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3C208D2F-84C9-4F84-82A5-B7BF53327CE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3C208D2F-84C9-4F84-82A5-B7BF53327CE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C208D2F-84C9-4F84-82A5-B7BF53327CE8}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -12,9 +12,11 @@ namespace StockNotification.Database.Interface
         IList<User> GetUser();
         IList<Stock> GetStockOfUser(string userId);
         Stock GetStock(string symbol);
+        IList<Stock> GetStock();
         User SaveUser(User user);
         int ClearOverdueStock();
         void SaveStockForUser(string userId, string symbol);
         int ClearStockOfUser(string userId);
+        bool IsRelated(string userId, string stockId);
     }
 }

@@ -1,6 +1,4 @@
-﻿
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -65,6 +63,13 @@ namespace StockNotification.Database.SQLite
             }
 
             return list[0];
+        }
+
+        public IList<Stock> GetStock()
+        {
+            var table = DatabaseHelper.Instance.GetDataTable(
+                "select * from stock order by stock");
+            return BuildStockList(table);
         }
 
         public User SaveUser(User user)
@@ -137,6 +142,15 @@ namespace StockNotification.Database.SQLite
                                                    {
                                                        userId
                                                    });
+        }
+
+        public bool IsRelated(string userId, string stockId)
+        {
+            var countObj = DatabaseHelper.Instance.ExecuteScalar(
+                "select count(1) from userstock where userid=$userid and stockid=$stockid",
+                new object[] {userId, stockId}
+                );
+            return int.Parse(countObj.ToString()) > 0;
         }
 
         private IList<Stock> BuildStockList(DataTable table)

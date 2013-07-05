@@ -13,65 +13,30 @@ namespace StockNotification.WinService
 {
     public partial class MainSvr : ServiceBase
     {
+        private readonly IStore store;
+
         public MainSvr()
         {
+            store = ApplicationEntry.Instance.GetService<IStore>();
             InitializeComponent();
         }
 
         protected override void OnStart(string[] args)
         {
-            //ThreadPool.QueueUserWorkItem(delegate(object state)
-            //    {
-            //        while (true)
-            //        {
-            //            StartProcessing();
-            //            Thread.Sleep(TimeSpan.FromMinutes(30));
-            //        }
-            //    });
-
-            if (StartMySQL())
-            {
-                StartProcessing();
-                StopMySQL();
-            }
-        }
-
-        public  static bool StartMySQL()
-        {
-            try
-            {
-                var control = new ServiceController("mysql");
-                control.Start();
-                Thread.Sleep(TimeSpan.FromSeconds(10));
-                return true;
-            }
-            catch (Exception e)
-            {
-                LogManager.WriteLog(LogFileType.Error, "启动MySQL失败" + e);
-                return false;
-            }
-        }
-
-        public static void StopMySQL()
-        {
-            try
-            {
-                var control = new ServiceController("mysql");
-                if (control.CanStop)
+            ThreadPool.QueueUserWorkItem(delegate(object state)
                 {
-                    control.Stop();
-                }
-            }
-            catch (Exception e)
-            {
-                LogManager.WriteLog(LogFileType.Error, "停止MySQL失败" + e);
-            } 
+                    while (true)
+                    {
+                        StartProcessing();
+                        Thread.Sleep(TimeSpan.FromMinutes(30));
+                    }
+                });
         }
 
         public void StartProcessing()
         {
             var dictionary = new Dictionary<Stock, IList<string>>();
-            var stocks = GetStocks();
+            var stocks = store.GetStock();
             foreach (var stock in stocks)
             {
                 var analyzer = new StockAnalyzer(stock);
@@ -79,14 +44,14 @@ namespace StockNotification.WinService
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
 
-            var users = GetUsers();
+            var users = store.GetUser();
             foreach (var u in users)
             {
                 var userSymbols = new List<string>();
                 var userMessages = new List<string>();
                 foreach (var pair in dictionary)
                 {
-                    if ((pair.Value.Count > 0) && Related(u, pair.Key))
+                    if ((pair.Value.Count > 0) && store.IsRelated(u.Id, pair.Key.Id))
                     {
                         userSymbols.Add(pair.Key.Symbol);
                         userMessages.AddRange(pair.Value);
@@ -95,7 +60,8 @@ namespace StockNotification.WinService
 
                 if (userMessages.Count > 0)
                 {
-                    const string prefix = "上一交易日股票提醒:";
+                    const string prefixPattern = "交易日股票提醒:";
+                    var prefix = string.Format("{0}{1}", StockAnalyzer.LastSessionDate, prefixPattern);
                     string subject = prefix + string.Join(",", userSymbols);
                     string body = prefix + "<br />" + string.Join("<br />", userMessages);
                     body += "<br/>" + DateTime.Now;
@@ -109,38 +75,6 @@ namespace StockNotification.WinService
                     sender.Send();
                 }
             }
-        }
-
-        private bool Related(User user, Stock stock)
-        {
-            var countObj = DatabaseHelper.Instance.ExecuteScalar(
-                "select count(1) from userstock where userid=?userid and stockid=?stockid",
-                new object[]{user.Id, stock.Id}
-                );
-            return int.Parse(countObj.ToString()) > 0;
-        }
-
-        private IEnumerable<User> GetUsers()
-        {
-            var dt = DatabaseHelper.Instance.GetDataTable("select * from user");
-            return (from DataRow r in dt.Rows
-                    select new User
-                        {
-                            Id = r["userid"].ToString(),
-                            Email = r["email"].ToString(),
-                            Name = r["username"].ToString()
-                        }).ToList();
-        }
-
-        private IEnumerable<Stock> GetStocks()
-        {
-            var dt = DatabaseHelper.Instance.GetDataTable("select * from stock");
-            return (from DataRow r in dt.Rows
-                    select new Stock
-                        {
-                            Id = r["id"].ToString(),
-                            Symbol = r["stock"].ToString()
-                        }).ToList();
         }
 
         protected override void OnStop()

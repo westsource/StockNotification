@@ -22,11 +22,7 @@ namespace StockNotification.WinService
 
             if (args.Length > 0 && args[0].ToLower() == "debug")
             {
-                if (MainSvr.StartMySQL())
-                {
                     (ServicesToRun[0] as MainSvr).StartProcessing();
-                    MainSvr.StopMySQL();
-                }
             }
             else
             {
