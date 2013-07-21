@@ -3,7 +3,6 @@ using System.Data;
 using System.Windows.Forms;
 using StockNotification.Common;
 using StockNotification.Database.Interface;
-using StockNotification.WinService.Entity;
 
 namespace StockNotification.Gui
 {

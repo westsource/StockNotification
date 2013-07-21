@@ -1,15 +1,12 @@
-﻿using System.Data;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using StockNotification.Database.Interface;
-using StockNotification.WinService.CheckPoint;
-using StockNotification.WinService.Entity;
+using StockNotification.Service.CheckPoint;
 using System;
 using System.Collections.Generic;
 using System.ServiceProcess;
 using StockNotification.Common;
 
-namespace StockNotification.WinService
+namespace StockNotification.Service
 {
     public partial class MainSvr : ServiceBase
     {
@@ -37,10 +34,12 @@ namespace StockNotification.WinService
         {
             var dictionary = new Dictionary<Stock, IList<string>>();
             var stocks = store.GetStock();
+            string sessionDate = DateTime.Now.ToString("yyyy-MM-dd");
             foreach (var stock in stocks)
             {
                 var analyzer = new StockAnalyzer(stock);
                 dictionary[stock] = analyzer.Analyse();
+                sessionDate = analyzer.LastSessionDate;
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
 
@@ -60,11 +59,12 @@ namespace StockNotification.WinService
 
                 if (userMessages.Count > 0)
                 {
-                    const string prefixPattern = "交易日股票提醒:";
-                    var prefix = string.Format("{0}{1}", StockAnalyzer.LastSessionDate, prefixPattern);
+                    //const string prefix = "上一交易日股票提醒:";
+                    const string prefixPattern = "交易日股票提醒:<br />";
+                    var prefix = string.Format("{0}{1}", sessionDate, prefixPattern);
                     string subject = prefix + string.Join(",", userSymbols);
                     string body = prefix + "<br />" + string.Join("<br />", userMessages);
-                    body += "<br/>" + DateTime.Now;
+                    body += "<br/><br/>" + DateTime.Now;
 
                     var sender = new MailSender(u.Email,
                                                 "56472190@qq.com",

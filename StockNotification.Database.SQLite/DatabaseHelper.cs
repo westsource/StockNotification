@@ -28,30 +28,6 @@ namespace StockNotification.Database.SQLite
             get { return instance; }
         }
 
-        public int ExecuteSql(string sql, List<object[]> valuesList)
-        {
-            int effect = 0;
-            using (var connection = new SQLiteConnection(ConnectionString))
-            {
-                connection.Open();
-                var tran = connection.BeginTransaction();
-                try
-                {
-                    effect += valuesList.Sum(values => ExecuteSql(sql, values, connection, tran));
-                    tran.Commit();
-                    return effect;
-                }
-                catch (Exception)
-                {
-                    tran.Rollback();
-                    throw;
-                }
-                finally
-                {
-                    connection.Close();
-                }
-            }
-        }
 
         private int ExecuteSql(string sql, object[] values, 
             SQLiteConnection connection, SQLiteTransaction transaction)
@@ -108,6 +84,31 @@ namespace StockNotification.Database.SQLite
                 try
                 {
                     return ExecuteSql(sql, values, connection, null);
+                }
+                finally
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        public int ExecuteSql(string sql, List<object[]> valuesList)
+        {
+            int effect = 0;
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                connection.Open();
+                var tran = connection.BeginTransaction();
+                try
+                {
+                    effect += valuesList.Sum(values => ExecuteSql(sql, values, connection, tran));
+                    tran.Commit();
+                    return effect;
+                }
+                catch (Exception)
+                {
+                    tran.Rollback();
+                    throw;
                 }
                 finally
                 {

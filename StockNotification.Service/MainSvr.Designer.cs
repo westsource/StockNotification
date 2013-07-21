@@ -1,4 +1,4 @@
-﻿namespace StockNotification.WinService
+﻿namespace StockNotification.Service
 {
     partial class MainSvr
     {

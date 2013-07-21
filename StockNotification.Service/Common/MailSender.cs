@@ -1,7 +1,7 @@
 ﻿using System.Net.Mail;
 using System.Net.Mime;
 
-namespace StockNotification.WinService.Common
+namespace StockNotification.Service.Common
 {
     class MailSender
     {

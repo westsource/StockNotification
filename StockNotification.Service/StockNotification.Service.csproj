@@ -7,8 +7,8 @@
     <ProjectGuid>{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>StockNotification.WinService</RootNamespace>
-    <AssemblyName>StockNotification.WinService</AssemblyName>
+    <RootNamespace>StockNotification.Service</RootNamespace>
+    <AssemblyName>StockNotification.Service</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -30,6 +30,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>App.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Autofac, Version=2.6.3.862, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
@@ -54,14 +57,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CheckPoint\BreakOutOfMa200.cs" />
-    <Compile Include="CheckPoint\BreakOutOfMa50.cs" />
-    <Compile Include="CheckPoint\ICheckPoint.cs" />
-    <Compile Include="CheckPoint\ICompareWithMa.cs" />
-    <Compile Include="CheckPoint\MovingHeavyBase.cs" />
+    <Compile Include="CheckPoint\BreakOutOfMovingLine.cs" />
+    <Compile Include="CheckPoint\MovingLine.cs" />
     <Compile Include="CheckPoint\StockAnalyzer.cs" />
-    <Compile Include="CheckPoint\CompareWithMaBase.cs" />
-    <Compile Include="CheckPoint\SupportByMaBase.cs" />
     <Compile Include="Common\MailSender.cs" />
     <Compile Include="Entity\StockLastPriceDate.cs" />
     <Compile Include="Entity\Session.cs" />
@@ -104,6 +102,9 @@
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="App.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,4 +1,4 @@
-﻿namespace StockNotification.WinService.Entity
+﻿namespace StockNotification.Service.Entity
 {
     public class Session
     {
@@ -9,7 +9,7 @@
         public double High { get; set; }
         public double Low { get; set; }
         public double Close { get; set; }
-        public ulong Volume { get; set; }
+        public double Volume { get; set; }
         public double AdjClose { get; set; }
     }
 }

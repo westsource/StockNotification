@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Manager", "StockNotification.Manager\StockNotification.Manager.csproj", "{E92AC281-274D-49AD-A708-D146444C7188}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.WinService", "StockNotification.WinService\StockNotification.WinService.csproj", "{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Common", "StockNotification.Common\StockNotification.Common.csproj", "{E6750685-C0D1-4D0B-9F9E-EFA83714C3C0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Gui", "StockNotification.Gui\StockNotification.Gui.csproj", "{4845D0E0-D2CD-4D29-A8FE-0464CA357588}"
@@ -12,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Database.Interface", "StockNotification.Database.Interface\StockNotification.Database.Interface.csproj", "{3C208D2F-84C9-4F84-82A5-B7BF53327CE8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Database.SQLite", "StockNotification.Database.SQLite\StockNotification.Database.SQLite.csproj", "{37F25B06-7FC8-447A-A964-521D21193DB3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockNotification.Service", "StockNotification.Service\StockNotification.Service.csproj", "{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,6 @@ Global
 		{E92AC281-274D-49AD-A708-D146444C7188}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E92AC281-274D-49AD-A708-D146444C7188}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E92AC281-274D-49AD-A708-D146444C7188}.Release|Any CPU.Build.0 = Release|Any CPU
-		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E6750685-C0D1-4D0B-9F9E-EFA83714C3C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E6750685-C0D1-4D0B-9F9E-EFA83714C3C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6750685-C0D1-4D0B-9F9E-EFA83714C3C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -43,6 +39,10 @@ Global
 		{37F25B06-7FC8-447A-A964-521D21193DB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37F25B06-7FC8-447A-A964-521D21193DB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37F25B06-7FC8-447A-A964-521D21193DB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30DCBDA5-E2A0-4EEB-89DB-30ECABC058D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
