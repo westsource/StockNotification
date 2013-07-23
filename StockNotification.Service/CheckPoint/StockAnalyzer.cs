@@ -168,7 +168,9 @@ namespace StockNotification.Service.CheckPoint
                 || priceDelta >= cPositiveBenchmark 
                 || priceDelta <= cNegativeBenchmark)
             {
-                var msg = string.Format(">{1}{2}{3:f2}%，收盘价{6}，{7}成交量为{4}日均值的{5:f0}%，上交易日的{0:f0}%",
+                _messages.Add(">" + Stock.Symbol);
+
+                var msg = string.Format("{2}{3:f2}%，收盘价{6}，{7}成交量为{4}日均值的{5:f0}%，上交易日的{0:f0}%",
                                         100*(current.Volume/last.Volume),
                                         Stock.Symbol,
                                         priceDelta > 0 ? "上涨" : "下跌",
@@ -176,7 +178,7 @@ namespace StockNotification.Service.CheckPoint
                                         volumeDeltaScalar,
                                         volumeDelta,
                                         current.Close,
-                                        IsNewHigh(current, sessions)?"创52周新高，":"");
+                                        IsNewHigh(current, sessions) ? "创52周新高，" : "");
                 _messages.Add(msg);
 
                 const double cMovingLineVolumeBenchmark = 10; //10%以上
@@ -198,6 +200,7 @@ namespace StockNotification.Service.CheckPoint
                 AppendToMessages((new BelowOfMovingLine()).Check(sessions,
                                                                  new MovingLine(200, sessions),
                                                                  cMovingLineVolumeBenchmark));
+                AppendToMessages(PositionChecker.Check(current, 0.3));
             }
 
             return _messages;
@@ -230,7 +233,8 @@ namespace StockNotification.Service.CheckPoint
         {
             if (!string.IsNullOrEmpty(msg))
             {
-                _messages.Add("&nbsp;&nbsp;&nbsp;&nbsp;"+msg);
+                //_messages.Add("&nbsp;&nbsp;&nbsp;&nbsp;"+msg);
+                _messages.Add(msg);
             }
         }
 

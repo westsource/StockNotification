@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="CheckPoint\BreakOutOfMovingLine.cs" />
     <Compile Include="CheckPoint\MovingLine.cs" />
+    <Compile Include="CheckPoint\PositionChecker.cs" />
     <Compile Include="CheckPoint\StockAnalyzer.cs" />
     <Compile Include="Common\MailSender.cs" />
     <Compile Include="Entity\StockLastPriceDate.cs" />
