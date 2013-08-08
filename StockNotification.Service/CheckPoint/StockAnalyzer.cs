@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using StockNotification.Common;
 using StockNotification.Database.Interface;
@@ -12,6 +15,7 @@ namespace StockNotification.Service.CheckPoint
     class StockAnalyzer
     {
         private readonly Stock _stock;
+        private readonly IStore _store;
         private readonly List<string> _messages = new List<string>();
 
         private string _lastSessionDate = string.Empty;
@@ -43,29 +47,103 @@ namespace StockNotification.Service.CheckPoint
             get { return _stock; }
         }
 
-        public StockAnalyzer(Stock stock)
+        public StockAnalyzer(Stock stock, IStore store)
         {
             _stock = stock;
+            _store = store;
         }
 
         public IList<string> Analyse()
         {
-            var file = DownloadSessionHistory();
-            return CheckPoints(file);
+            GetInstitutionOwn();
+            var sessions = GetSessions();
+            return CheckPoints(sessions);
         }
 
-        private string DownloadSessionHistory()
+        private void GetInstitutionOwn()
+        {
+            var content = GetInstituionPageContent();
+            string regex = @"机构持股：<span>(\w*\.\w*)%</span>";
+            const RegexOptions options =
+                ((RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline) | RegexOptions.IgnoreCase);
+            var reg = new Regex(regex, options);
+            Match match = reg.Match(content);
+            if (match.Success && match.Groups.Count > 1)
+            {
+                var value = match.Groups[1].Captures[0].Value;
+                float rate = 0;
+                if (float.TryParse(value, out rate))
+                {
+                    var time = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+                    var own = new InstitutionOwn {Rate = rate, TimeStamp = time};
+                    if (_stock.InstOwnList.Count == 0
+                        || _stock.InstOwnList[0].TimeStamp != own.TimeStamp)
+                    {
+                        _stock.InstOwnList.Insert(0, own);
+                        _store.SaveStockInstOwn(_stock.Symbol, rate, time);
+                    }
+                }
+
+            }
+        }
+
+        private string GetInstituionPageContent()
+        {
+            const string urlPattern = "http://xueqiu.com/S/{0}";
+            var url = string.Format(urlPattern, _stock.Symbol);
+            var ms = new MemoryStream();
+
+            try
+            {
+                var request = (HttpWebRequest) WebRequest.Create(url);
+                var response = (HttpWebResponse) request.GetResponse();
+
+                using (var st = response.GetResponseStream())
+                {
+                    if (st == null)
+                    {
+                        return string.Empty;
+                    }
+
+                    var totalDownloadedByte = 0;
+                    var buffer = new byte[1024];
+                    int osize = st.Read(buffer, 0, buffer.Length);
+                    while (osize > 0)
+                    {
+                        totalDownloadedByte = osize + totalDownloadedByte;
+                        ms.Write(buffer, 0, osize);
+
+                        osize = st.Read(buffer, 0, buffer.Length);
+                        Thread.Sleep(TimeSpan.FromMilliseconds(1));
+                    }
+                    st.Close();
+                    ms.Seek(0, SeekOrigin.Begin);
+                }
+
+                return Encoding.GetEncoding("utf-8").GetString(ms.ToArray());
+            }
+            catch (Exception e)
+            {
+                LogManager.WriteLog(LogFileType.Error, url + "。" + e);
+                return string.Empty;
+            }
+            finally
+            {
+                ms.Close();
+            }
+        }
+
+        private string DownloadSessionHistory(DateTime begin)
         {
             //形如 http://ichart.finance.yahoo.com/table.csv?s=MA&a=04&b=25&c=2006&d=03&e=13&f=2013&g=d&ignore=.csv
             const string urlMask =
                 "http://ichart.finance.yahoo.com/table.csv?s={6}&a={0}&b={1}&c={2}&d={3}&e={4}&f={5}&g=d&ignore=.csv";
 
-            var begin = DateTime.Now.Date.AddYears(-1);
             string beginMonth = begin.ToString("MM");
             string beginDay = begin.ToString("dd");
             string beginYear = begin.ToString("yyyy");
 
-            var end = DateTime.Now.Date;
+            var end = DateTime.Now.Date.AddDays(-1);
             var endMonth = end.ToString("MM");
             var endDay = end.ToString("dd");
             var endYear = end.ToString("yyyy");
@@ -80,13 +158,6 @@ namespace StockNotification.Service.CheckPoint
                                     _stock.Symbol);
             try
             {
-                var files = Directory.GetFiles(DataPath, "*.*");
-                //删除旧的交易记录文件
-                foreach (var f in files)
-                {
-                    File.Delete(f);
-                }
-
                 using (var ms = new MemoryStream())
                 {
                     DownloadHistorySession(url, ms);
@@ -140,9 +211,8 @@ namespace StockNotification.Service.CheckPoint
             }
         }
 
-        private IList<string> CheckPoints(string file)
+        private IList<string> CheckPoints(IList<Session> sessions)
         {
-            var sessions = GetSessions(file);
             if (sessions.Count < 2)
             {
                 return new List<string>();
@@ -156,9 +226,9 @@ namespace StockNotification.Service.CheckPoint
             var current = sessions[0];
             var last = sessions[1];
 
-            const double cPositiveBenchmark = 1.0;
-            const double cNegativeBenchmark = -1.0;
-            const double cVolumeBenchmark = 110;//150%以上
+            const double cPositiveBenchmark = 1.2;
+            const double cNegativeBenchmark = -1.2;
+            const double cVolumeBenchmark = 120;//120%以上
 
             var priceDelta = 100*(current.Close - last.Close)/last.Close;
             double volumeDelta;
@@ -170,15 +240,15 @@ namespace StockNotification.Service.CheckPoint
             {
                 _messages.Add(">" + Stock.Symbol);
 
-                var msg = string.Format("{2}{3:f2}%，收盘价{6}，{7}成交量为{4}日均值的{5:f0}%，上交易日的{0:f0}%",
+                var msg = string.Format("收盘价{6}，{2}{3:f2}%，{7}成交量为{4}日均值的{5:f0}%，上交易日的{0:f0}%",
                                         100*(current.Volume/last.Volume),
                                         Stock.Symbol,
-                                        priceDelta > 0 ? "上涨" : "下跌",
+                                        priceDelta > 0 ? "+" : "",
                                         priceDelta,
                                         volumeDeltaScalar,
                                         volumeDelta,
                                         current.Close,
-                                        IsNewHigh(current, sessions) ? "创52周新高，" : "");
+                                        IsNewHigh(current, sessions) ? "创历史新高，" : "");
                 _messages.Add(msg);
 
                 const double cMovingLineVolumeBenchmark = 10; //10%以上
@@ -200,7 +270,20 @@ namespace StockNotification.Service.CheckPoint
                 AppendToMessages((new BelowOfMovingLine()).Check(sessions,
                                                                  new MovingLine(200, sessions),
                                                                  cMovingLineVolumeBenchmark));
-                AppendToMessages(PositionChecker.Check(current, 0.3));
+                //收盘价位置
+                AppendToMessages(PositionChecker.Check(current, 0.2));
+                //均线缠绕
+                AppendToMessages(MovingLineTwine.Check(5, 10, sessions));
+                //在20日、50日、200日均线上获得支撑
+                AppendToMessages(SupportByMovingLine.Check(20, sessions));
+                AppendToMessages(SupportByMovingLine.Check(50, sessions));
+                AppendToMessages(SupportByMovingLine.Check(200, sessions));
+                //在均线上反弹
+                AppendToMessages(ReboundByMovingLine.Check(20, sessions));
+                AppendToMessages(ReboundByMovingLine.Check(50, sessions));
+                AppendToMessages(ReboundByMovingLine.Check(200, sessions));
+                //机构持股率发生变化
+                AppendToMessages(InstitutionOwnChange.Check(_stock.InstOwnList));
             }
 
             return _messages;
@@ -212,7 +295,7 @@ namespace StockNotification.Service.CheckPoint
             return current.Close >= high;
         }
 
-        private bool CompareWithMovingLine(List<Session> sessions,
+        private bool CompareWithMovingLine(IList<Session> sessions,
                                            double volumeBenchmark,
                                            out double volumeDeltaRate,
                                            out int volumeDeltaScalar)
@@ -238,30 +321,70 @@ namespace StockNotification.Service.CheckPoint
             }
         }
 
-        private List<Session> GetSessions(string file)
+        private List<Session> GetSessions()
+        {
+            var sessions = new List<Session>();
+            var files = Directory.GetFiles(DataPath).ToList();
+            if (files.Count > 0)
+            {
+                files.Sort();
+                foreach (var f in files)
+                {
+                    var temps = GetSessions(f);
+                    sessions.AddRange(temps);
+                }
+            }
+
+            if (sessions.Count > 0
+                && sessions[0].Date == DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd"))
+            {
+                return sessions;
+            }
+
+            //yahoo的股价，获取的天数太少会有问题，所以一把全获取了
+            sessions.Clear();
+            //删除旧的交易记录文件
+            foreach (var f in files)
+            {
+                File.Delete(f);
+            }
+
+            DateTime begin = sessions.Count > 0
+                                 ? DateTime.Parse(sessions[0].Date).AddDays(1)
+                                 : DateTime.Now.Date.AddYears(-100);
+
+            var file = DownloadSessionHistory(begin);
+            var lasts = GetSessions(file);
+            sessions.AddRange(lasts);
+            return sessions;
+        }
+
+        private IList<Session> GetSessions(string file)
         {
             var list = new List<Session>();
             if (!string.IsNullOrEmpty(file) && File.Exists(file))
             {
-                var reader = new StreamReader(file);
-                reader.ReadLine(); //第一行是表头，丢弃
-
-                var line = reader.ReadLine();
-                while (!string.IsNullOrEmpty(line))
+                using (var reader = new StreamReader(file))
                 {
-                    try
-                    {
-                        var trade = ParseToSession(line);
-                        trade.Id = Guid.NewGuid().ToString();
-                        trade.StockId = _stock.Id;
+                    reader.ReadLine(); //第一行是表头，丢弃
 
-                        list.Add(trade);
-                    }
-                    catch (Exception e)
+                    var line = reader.ReadLine();
+                    while (!string.IsNullOrEmpty(line))
                     {
-                        LogManager.WriteLog(LogFileType.Error, e.ToString());
+                        try
+                        {
+                            var trade = ParseToSession(line);
+                            trade.Id = Guid.NewGuid().ToString();
+                            trade.StockId = _stock.Id;
+
+                            list.Add(trade);
+                        }
+                        catch (Exception e)
+                        {
+                            LogManager.WriteLog(LogFileType.Error, e.ToString());
+                        }
+                        line = reader.ReadLine();
                     }
-                    line = reader.ReadLine();
                 }
             }
 

@@ -18,5 +18,6 @@ namespace StockNotification.Database.Interface
         void SaveStockForUser(string userId, string symbol);
         int ClearStockOfUser(string userId);
         bool IsRelated(string userId, string stockId);
+        void SaveStockInstOwn(string symbol, float rate, string time);
     }
 }

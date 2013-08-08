@@ -37,7 +37,7 @@ namespace StockNotification.Service
             string sessionDate = DateTime.Now.ToString("yyyy-MM-dd");
             foreach (var stock in stocks)
             {
-                var analyzer = new StockAnalyzer(stock);
+                var analyzer = new StockAnalyzer(stock, store);
                 dictionary[stock] = analyzer.Analyse();
                 sessionDate = analyzer.LastSessionDate;
                 Thread.Sleep(TimeSpan.FromSeconds(1));
@@ -60,10 +60,10 @@ namespace StockNotification.Service
                 if (userMessages.Count > 0)
                 {
                     //const string prefix = "上一交易日股票提醒:";
-                    const string prefixPattern = "交易日股票提醒:<br />";
+                    const string prefixPattern = "交易日股票提醒:";
                     var prefix = string.Format("{0}{1}", sessionDate, prefixPattern);
                     string subject = prefix + string.Join(",", userSymbols);
-                    string body = prefix + "<br />" + string.Join("<br />", userMessages);
+                    string body = prefix + "<br /><br />" + string.Join("<br />", userMessages);
                     body += "<br/><br/>" + DateTime.Now;
 
                     var sender = new MailSender(u.Email,

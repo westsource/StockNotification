@@ -57,10 +57,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CheckPoint\BreakOutOfMovingLine.cs" />
+    <Compile Include="CheckPoint\AcrossMovingLine.cs" />
+    <Compile Include="CheckPoint\InstitutionOwnChange.cs" />
     <Compile Include="CheckPoint\MovingLine.cs" />
+    <Compile Include="CheckPoint\MovingLineTwine.cs" />
     <Compile Include="CheckPoint\PositionChecker.cs" />
+    <Compile Include="CheckPoint\ReboundByMovingLine.cs" />
     <Compile Include="CheckPoint\StockAnalyzer.cs" />
+    <Compile Include="CheckPoint\SupportByMovingLine.cs" />
     <Compile Include="Common\MailSender.cs" />
     <Compile Include="Entity\StockLastPriceDate.cs" />
     <Compile Include="Entity\Session.cs" />

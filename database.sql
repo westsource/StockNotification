@@ -11,33 +11,44 @@
 /*!40014 SET FOREIGN_KEY_CHECKS=0 */;
 
 -- Dumping structure for table stocknotification.stock
+-- COMMENT='股票代码';
 CREATE TABLE IF NOT EXISTS `stock` (
-  `id` varchar(50) NOT NULL,
+  `id` varchar(50) NOT NULL PRIMARY KEY,
   `stock` varchar(50) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='股票代码';
+); 
 
 -- Data exporting was unselected.
 
 
 -- Dumping structure for table stocknotification.user
+-- COMMENT='用户';
 CREATE TABLE IF NOT EXISTS `user` (
-  `userid` varchar(50) NOT NULL,
+  `userid` varchar(50) NOT NULL PRIMARY KEY,
   `username` varchar(50) NOT NULL,
   `email` varchar(100) NOT NULL,
   PRIMARY KEY (`userid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户';
+);
 
 -- Data exporting was unselected.
 
 
 -- Dumping structure for table stocknotification.userstock
+-- COMMENT='用户关注股票'
 CREATE TABLE IF NOT EXISTS `userstock` (
-  `id` varchar(50) NOT NULL,
+  `id` varchar(50) NOT NULL PRIMARY KEY,
   `userid` varchar(50) NOT NULL,
   `stockid` varchar(50) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户关注股票';
+);
+
+-- COMMENT='机构持股率'
+CREATE TABLE IF NOT EXISTS 'stock_inst_own' (
+  `id` varchar(50) NOT NULL PRIMARY KEY,
+  `stockid` varchar(50) NOT NULL,
+  'instown' int NOT NULL,
+  'time' varchar(40) NOT NULL
+) 	
 
 -- Data exporting was unselected.
 /*!40014 SET FOREIGN_KEY_CHECKS=1 */;

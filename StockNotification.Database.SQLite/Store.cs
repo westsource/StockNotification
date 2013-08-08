@@ -43,26 +43,26 @@ namespace StockNotification.Database.SQLite
                 new object[] {symbol});
             var list = BuildStockList(table);
 
-            if (list.Count == 0)
+            if (list.Count > 0)
             {
-                var stock = new Stock()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Symbol = symbol
-                    };
-
-                DatabaseHelper.Instance.ExecuteSql(
-                    "insert into stock(id,stock)values($id,$stock)",
-                    new object[]
-                        {
-                            stock.Id,
-                            stock.Symbol
-                        });
-
-                return stock;
+                return list[0];
             }
 
-            return list[0];
+            var stock = new Stock
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Symbol = symbol
+                };
+
+            DatabaseHelper.Instance.ExecuteSql(
+                "insert into stock(id,stock)values($id,$stock)",
+                new object[]
+                    {
+                        stock.Id,
+                        stock.Symbol
+                    });
+
+            return stock;
         }
 
         public IList<Stock> GetStock()
@@ -162,7 +162,31 @@ namespace StockNotification.Database.SQLite
                                 Symbol = r["stock"].ToString()
                             }
                        ).ToList();
+            foreach (var stock in list)
+            {
+                GetInstOwnInfo(stock);
+            }
+
             return list;
+        }
+
+        private void GetInstOwnInfo(Stock stock)
+        {
+            var table = DatabaseHelper.Instance.GetDataTable(
+                "select * from stock_inst_own si where si.stockid=$stockid"
+                + " order by si.time desc",
+                new object[] {stock.Id}
+                );
+
+            foreach (DataRow r in table.Rows)
+            {
+                var own = new InstitutionOwn
+                    {
+                        Rate = float.Parse(r["instown"].ToString()),
+                        TimeStamp = r["time"].ToString()
+                    };
+                stock.InstOwnList.Add(own);
+            }
         }
 
         private static IList<User> BuildUserList(DataTable table)
@@ -175,6 +199,38 @@ namespace StockNotification.Database.SQLite
                                 Email = r["email"].ToString()
                             }).ToList();
             return list;
+        }
+
+
+        public void SaveStockInstOwn(string symbol, float rate, string time)
+        {
+            var stock = GetStock(symbol);
+            if (stock == null)
+            {
+                return;
+            }
+
+            var effected = DatabaseHelper.Instance.ExecuteSql(
+                "update stock_inst_own set instown=$rate where stockid=$stockid and time=$time",
+                new object[]
+                    {
+                        rate,
+                        stock.Id,
+                        time
+                    });
+
+            if (effected == 0)
+            {
+                DatabaseHelper.Instance.ExecuteSql(
+                "insert into stock_inst_own(id,stockid,instown,time)values($id,$stockid,$rate,$time)",
+                new object[]
+                    {
+                        Guid.NewGuid().ToString(),
+                        stock.Id,
+                        rate,
+                        time
+                    });
+            }
         }
     }
 }

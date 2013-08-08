@@ -17,7 +17,7 @@ namespace StockNotification.Service.CheckPoint
 
             if (positionRate < benchmark)
             {
-                return string.Format("收于当日价格范围的{0:F2}位置（顶部为1）", positionRate);
+                return string.Format("收于当日价格接近底部位置（{0:F2}位置，顶部为1）", positionRate);
             }
 
             return string.Empty;
