@@ -10,33 +10,43 @@ namespace StockNotification.Service.CheckPoint
 {
     abstract class AcrossMovingLine
     {
-        public string Check(IList<Session> sessions, MovingLine movingLine, double volumeBenchmark)
+        public string Check(IList<Session> sessions, int scalar, double volumeBenchmark)
         {
             var current = sessions[0];
             var last = sessions[1];
+            var currentMovingLine = new MovingLine(scalar, sessions);
+            var lastSessions = StockAnalyzer.Copy(sessions);
+            lastSessions.RemoveAt(0);
+            var lastMovingLine = new MovingLine(scalar, lastSessions);
 
-            if (Compares(current, last, movingLine)
-                && (100 * current.Volume / movingLine.Volume) > volumeBenchmark)
+            if (Compares(current, last, currentMovingLine, lastMovingLine)
+                && (100 * current.Volume / currentMovingLine.Volume) > volumeBenchmark)
             {
                 return string.Format("{3}{0}日均线{1:F2}%，成交量为{0}日均值的{2:F2}%",
-                                     movingLine.Scalar,
-                                     100 * (current.Close - movingLine.Price) / movingLine.Price,
-                                     100 * current.Volume / movingLine.Volume,
+                                     currentMovingLine.Scalar,
+                                     100 * (current.Close - currentMovingLine.Price) / currentMovingLine.Price,
+                                     100 * current.Volume / currentMovingLine.Volume,
                                      Behaviour);
             }
 
             return string.Empty;
         }
 
-        protected abstract bool Compares(Session current, Session last, MovingLine movingLine);
+        protected abstract bool Compares(Session current,
+                                        Session last,
+                                        MovingLine currentMovingLine,
+                                        MovingLine lastMovingLine);
         protected abstract string Behaviour { get; }
     }
     
     class BreakOutOfMovingLine: AcrossMovingLine
     {
-        protected override bool Compares(Session current, Session last, MovingLine movingLine)
+        protected override bool Compares(Session current, 
+            Session last, 
+            MovingLine currentMovingLine, 
+            MovingLine lastMovingLine)
         {
-            return current.Close > movingLine.Price && last.Close < movingLine.Price;
+            return current.Close > currentMovingLine.Price && last.Close < lastMovingLine.Price;
         }
 
         protected override string Behaviour
@@ -47,9 +57,12 @@ namespace StockNotification.Service.CheckPoint
 
     class BelowOfMovingLine: AcrossMovingLine
     {
-        protected override bool Compares(Session current, Session last, MovingLine movingLine)
+        protected override bool Compares(Session current,
+            Session last,
+            MovingLine currentMovingLine,
+            MovingLine lastMovingLine)
         {
-            return current.Close < movingLine.Price && last.Close > movingLine.Price;
+            return current.Close < currentMovingLine.Price && last.Close > lastMovingLine.Price;
         }
 
         protected override string Behaviour

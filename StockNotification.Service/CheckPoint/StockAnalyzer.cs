@@ -161,9 +161,10 @@ namespace StockNotification.Service.CheckPoint
                 using (var ms = new MemoryStream())
                 {
                     DownloadHistorySession(url, ms);
+                    _lastSessionDate = GetLastSesssionDate(ms);
                     var dataFileName = string.Format("{0}\\{1}.csv",
                                                      DataPath,
-                                                     DateTime.Now.ToString("yyyy-MM-dd"));
+                                                     _lastSessionDate);
                     using (var fs = new FileStream(dataFileName, FileMode.Create))
                     {
                         var buffer = ms.ToArray();
@@ -180,6 +181,29 @@ namespace StockNotification.Service.CheckPoint
             {
                 LogManager.WriteLog(LogFileType.Error, e.Message + ":" + url);
                 return string.Empty;
+            }
+        }
+
+        private static string GetLastSesssionDate(MemoryStream source)
+        {
+            source.Seek(0, SeekOrigin.Begin);
+            try
+            {
+                using (Stream ms = new MemoryStream(source.ToArray()))
+                {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    using (var reader = new StreamReader(ms))
+                    {
+                        reader.ReadLine();
+                        var line = reader.ReadLine();
+                        var session = ParseToSession(line);
+                        return session.Date;
+                    }
+                }
+            }
+            finally
+            {
+                source.Seek(0, SeekOrigin.Begin);
             }
         }
 
@@ -218,11 +242,6 @@ namespace StockNotification.Service.CheckPoint
                 return new List<string>();
             }
 
-            if (sessions.Count > 0)
-            {
-                _lastSessionDate = sessions[0].Date;
-            }
-
             var current = sessions[0];
             var last = sessions[1];
 
@@ -240,7 +259,7 @@ namespace StockNotification.Service.CheckPoint
             {
                 _messages.Add(">" + Stock.Symbol);
 
-                var msg = string.Format("收盘价{6}，{2}{3:f2}%，{7}成交量为{4}日均值的{5:f0}%，上交易日的{0:f0}%",
+                var msg = string.Format("收盘价{6}，{2}{3:f2}%，{7}成交量为上交易日的{0:f0}%，{4}日均值的{5:f0}%",
                                         100*(current.Volume/last.Volume),
                                         Stock.Symbol,
                                         priceDelta > 0 ? "+" : "",
@@ -252,41 +271,47 @@ namespace StockNotification.Service.CheckPoint
                 _messages.Add(msg);
 
                 const double cMovingLineVolumeBenchmark = 10; //10%以上
-                AppendToMessages((new BreakOutOfMovingLine()).Check(sessions,
-                                                                    new MovingLine(10, sessions),
-                                                                    cMovingLineVolumeBenchmark));
-                AppendToMessages((new BreakOutOfMovingLine()).Check(sessions,
-                                                                    new MovingLine(50, sessions),
-                                                                    cMovingLineVolumeBenchmark));
-                AppendToMessages((new BreakOutOfMovingLine()).Check(sessions,
-                                                                    new MovingLine(200, sessions),
-                                                                    cMovingLineVolumeBenchmark));
-                AppendToMessages((new BelowOfMovingLine()).Check(sessions,
-                                                                 new MovingLine(10, sessions),
-                                                                 cMovingLineVolumeBenchmark));
-                AppendToMessages((new BelowOfMovingLine()).Check(sessions,
-                                                                 new MovingLine(50, sessions),
-                                                                 cMovingLineVolumeBenchmark));
-                AppendToMessages((new BelowOfMovingLine()).Check(sessions,
-                                                                 new MovingLine(200, sessions),
-                                                                 cMovingLineVolumeBenchmark));
+                AppendToMessages((new BreakOutOfMovingLine()).Check(sessions, 50, cMovingLineVolumeBenchmark));
+                AppendToMessages((new BreakOutOfMovingLine()).Check(sessions, 200, cMovingLineVolumeBenchmark));
+                AppendToMessages((new BelowOfMovingLine()).Check(sessions, 50, cMovingLineVolumeBenchmark));
+                AppendToMessages((new BelowOfMovingLine()).Check(sessions, 200, cMovingLineVolumeBenchmark));
                 //收盘价位置
                 AppendToMessages(PositionChecker.Check(current, 0.2));
                 //均线缠绕
                 AppendToMessages(MovingLineTwine.Check(5, 10, sessions));
                 //在20日、50日、200日均线上获得支撑
-                AppendToMessages(SupportByMovingLine.Check(20, sessions));
+                //AppendToMessages(SupportByMovingLine.Check(20, sessions));
                 AppendToMessages(SupportByMovingLine.Check(50, sessions));
                 AppendToMessages(SupportByMovingLine.Check(200, sessions));
                 //在均线上反弹
-                AppendToMessages(ReboundByMovingLine.Check(20, sessions));
+                //AppendToMessages(ReboundByMovingLine.Check(20, sessions));
                 AppendToMessages(ReboundByMovingLine.Check(50, sessions));
                 AppendToMessages(ReboundByMovingLine.Check(200, sessions));
                 //机构持股率发生变化
                 AppendToMessages(InstitutionOwnChange.Check(_stock.InstOwnList));
+
+                var movingLineCurrent = new MovingLine(50, sessions);
+                var temps = Copy(sessions);
+                temps.RemoveAt(0);
+                var movingLineYesterday = new MovingLine(50, temps);
+                temps.RemoveAt(0);
+                var movingLineBeforeYesterday = new MovingLine(50, temps);
+                AppendToMessages(MovingLineTrendChange.Check(new[]
+                    {
+                        movingLineCurrent,
+                        movingLineYesterday,
+                        movingLineBeforeYesterday
+                    }));
             }
 
             return _messages;
+        }
+
+        public static IList<Session> Copy(IList<Session> sessions)
+        {
+            var list = new List<Session>();
+            list.AddRange(sessions);
+            return list;
         }
 
         private bool IsNewHigh(Session current, IList<Session> sessions)
@@ -391,7 +416,7 @@ namespace StockNotification.Service.CheckPoint
             return list;
         }
 
-        private Session ParseToSession(string line)
+        private static Session ParseToSession(string line)
         {
             const int wordCounts = 7;
             var words = line.Split(new[] { ',' });
